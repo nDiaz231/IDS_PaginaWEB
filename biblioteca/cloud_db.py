@@ -62,13 +62,14 @@ class CloudflareBackend:
     def __init__(self, database):
         self.database = database
 
-      def batch(self, statements):
+    def batch(self, statements):
         from pyodide.ffi import run_sync
         from workers import python_from_rpc, python_to_rpc
 
         try:
             prepared = [self.database.prepare(sql).bind(*args) if args else self.database.prepare(sql)
                         for sql, args in statements]
+            # El SDK envuelve las consultas preparadas y puede devolver listas de Python.
             result = run_sync(self.database.batch(python_to_rpc(prepared)))
             return python_from_rpc(result)
         except Exception as exc:
