@@ -62,13 +62,15 @@ class CloudflareBackend:
     def __init__(self, database):
         self.database = database
 
-    def batch(self, statements):
-        from pyodide.ffi import run_sync, to_js
-        prepared = [self.database.prepare(sql).bind(*args) if args else self.database.prepare(sql)
-                    for sql, args in statements]
+      def batch(self, statements):
+        from pyodide.ffi import run_sync
+        from workers import python_from_rpc, python_to_rpc
+
         try:
-            result = run_sync(self.database.batch(to_js(prepared)))
-            return result.to_py()
+            prepared = [self.database.prepare(sql).bind(*args) if args else self.database.prepare(sql)
+                        for sql, args in statements]
+            result = run_sync(self.database.batch(python_to_rpc(prepared)))
+            return python_from_rpc(result)
         except Exception as exc:
             if 'stale_revision' in str(exc) or 'constraint' in str(exc).lower():
                 raise sqlite3.IntegrityError('Los datos cambiaron. Actualiza la página.') from exc
