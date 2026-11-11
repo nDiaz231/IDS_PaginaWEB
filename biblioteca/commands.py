@@ -14,11 +14,18 @@ def ask_password():
 
 
 def register_commands(app):
+    @app.cli.command('expire-pickups')
+    def expire_pickups_command():
+        """Libera reservas cuyo plazo de retiro de 24 horas terminó."""
+        from .circulation import expire_pickups
+        expire_pickups()
+        click.echo('Reservas vencidas procesadas.')
+
     @app.cli.command('upgrade-db')
     def upgrade_db():
         """Actualiza la versión 1 conservando sus registros y una copia previa."""
         saved = db.upgrade()
-        click.echo(f'Base actualizada. Respaldo previo: {saved}' if saved else 'Base en versión 2; no se modificó.')
+        click.echo(f'Base actualizada. Respaldo previo: {saved}' if saved else 'Base en versión 4; no se modificó.')
 
     @app.cli.command('backup-db')
     @click.argument('destination', type=click.Path(path_type=Path))

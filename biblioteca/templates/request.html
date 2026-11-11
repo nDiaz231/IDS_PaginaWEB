@@ -5,11 +5,12 @@
 <p class="eyebrow">SOLICITUD #{{ row.id }}</p>
 <h1>{{ row.title }}</h1>
 <p class="muted">{{ row.author }} · {{ row.collection_name }}</p>
-</div>{{ badge(row.status) }}</div>
+</div>{{ badge('vencida' if pickup_expired(row) else row.status) }}</div>
 <div class="detail-layout">
 <section class="panel">
 <h2>Detalle de la solicitud</h2>
 <dl class="details">
+<div><dt>Duración solicitada</dt><dd>{{ (row.requested_days|string + ' días desde la entrega') if row.requested_days else 'Solicitud anterior: duración no indicada' }}</dd></div>
 <div>
 <dt>Alumno</dt>
 <dd>{{ row.student_name }}</dd>
@@ -29,15 +30,16 @@
 <dt>Aprobación</dt>
 <dd>{{ row.approved_at|localdate }}</dd>
 </div>{% endif %}{% if row.ready_at %}<div>
-<dt>Confirmación de retiro</dt>
+<dt>Listo para retirar desde</dt>
 <dd>{{ row.ready_at|localdate }}</dd>
+</div><div><dt>Retirar antes de</dt><dd>{{ pickup_deadline(row)|localdate }}</dd>
 </div>{% endif %}{% if row.closed_at %}<div>
 <dt>Cierre de solicitud</dt>
 <dd>{{ row.closed_at|localdate }}</dd>
 </div>{% endif %}</dl>
 {% if row.status=='pendiente' %}<div class="notice info">Biblioteca está revisando tu solicitud. Todavía no tienes un ejemplar asignado.</div>{% elif row.status=='aprobada' %}<div class="notice {{ 'success' if row.ready_at else 'info' }}">
-<strong>{{ 'Listo para retirar.' if row.ready_at else 'En preparación.' }}</strong> {{ 'Biblioteca confirmó la preparación del ejemplar. La fecha de devolución se confirma al entregarlo.' if row.ready_at else 'Espera la confirmación antes de acudir. El período de préstamo aún no comienza.' }}</div>{% elif row.status=='rechazada' %}<div class="notice danger">
-<strong>Motivo del rechazo:</strong> {{ row.rejection_reason }}</div>{% elif row.status=='cancelada' %}<div class="notice info">Solicitud cancelada. Ya no retiene ningún ejemplar.</div>{% else %}<div class="notice success">Entrega registrada. Revisa el préstamo y su fecha de devolución en <a href="{{ url_for('views.admin_loans' if g.user.role=='admin' else 'views.my_loans') }}">{{ 'Préstamos' if g.user.role=='admin' else 'Mis préstamos' }}</a>.</div>{% endif %}
+<strong>{{ 'Listo para retirar.' if row.ready_at else 'En preparación.' }}</strong> {{ 'Tienes 24 horas desde la confirmación para retirar el ejemplar. La fecha de devolución se confirma al entregarlo.' if row.ready_at else 'Espera la confirmación antes de acudir. El período de préstamo aún no comienza.' }}</div>{% elif row.status=='rechazada' %}<div class="notice danger">
+<strong>Motivo del rechazo:</strong> {{ row.rejection_reason }}</div>{% elif row.status=='cancelada' %}<div class="notice info">{% if pickup_expired(row) %}<strong>Reserva vencida.</strong> Pasaron las 24 horas de retiro. El ejemplar fue liberado; puedes realizar una nueva solicitud si hay disponibilidad.{% else %}Solicitud cancelada. Ya no retiene ningún ejemplar.{% endif %}</div>{% else %}<div class="notice success">Entrega registrada. Revisa el préstamo y su fecha de devolución en <a href="{{ url_for('views.admin_loans' if g.user.role=='admin' else 'views.my_loans') }}">{{ 'Préstamos' if g.user.role=='admin' else 'Mis préstamos' }}</a>.</div>{% endif %}
 <a href="{{ url_for('catalog.detail',book_id=row.book_id) }}">Ver ficha del libro →</a>
 </section>
 <aside class="stack">
@@ -60,12 +62,12 @@
 </form>
 </section>
 {% elif row.status=='aprobada' %}<section class="panel">
-<h2>{{ 'Registrar entrega física' if row.ready_at else 'Preparar retiro' }}</h2>{% if not row.ready_at %}<p>Confirma cuando el ejemplar esté preparado. El alumno verá el aviso en su cuenta.</p>
+<h2>{{ 'Registrar entrega física' if row.ready_at else 'Preparar retiro' }}</h2>{% if not row.ready_at %}<p>Confirma cuando el ejemplar esté preparado. El alumno verá el aviso en su cuenta. Al confirmar comienzan sus 24 horas para retirar.</p>
 <form method="post" action="{{ url_for('views.request_action',request_id=row.id,action='preparar') }}">{{ csrf() }}<button class="button">Confirmar listo para retiro</button>
 </form>{% else %}<form method="post" action="{{ url_for('views.request_action',request_id=row.id,action='entregar') }}" class="stack">{{ csrf() }}<div>
 <label for="due_at">Fecha y hora de devolución</label>
-<input id="due_at" type="datetime-local" name="due_at" value="{{ suggested }}" required aria-describedby="due-help">
-<p id="due-help" class="small muted">Hora de Santiago. Sugerencia con días calendario; revisa feriados y horario de atención antes de confirmar.</p>
+<input id="due_at" type="datetime-local" name="due_at" value="{{ suggested }}" max="{{ suggested }}" required aria-describedby="due-help">
+<p id="due-help" class="small muted">Hora de Santiago. Calculada desde la entrega con la duración solicitada. Puedes adelantar la devolución, pero no superar ese plazo. Alta demanda: máximo 14 días; baja demanda: máximo 30.</p>
 </div>
 <label class="checkbox">
 <input type="checkbox" name="confirmed" value="yes" required>

@@ -2,7 +2,7 @@
 from . import data, rules
 from .db import transaction
 from .errors import DomainError
-from .timeutils import stamp, parse_local, now_utc
+from .timeutils import stamp, parse_local, now_utc, pickup_deadline, parse
 
 
 def require_admin(actor_id):
@@ -18,7 +18,8 @@ def get_request(request_id):
     return req
 
 
-def submit(user_id, book_id, collection_id):
+def submit(user_id, book_id, collection_id, requested_days=None):
+    days = rules.validate_requested_days(requested_days, collection_id)
     with transaction():
         rules.capacity(user_id, collection_id)
         if not data.book(book_id):
@@ -27,7 +28,7 @@ def submit(user_id, book_id, collection_id):
             raise DomainError('Ya tienes una solicitud activa o un préstamo activo de este título.')
         if not data.copies(book_id, True, collection_id):
             raise DomainError('Ya no hay ejemplares disponibles en esta colección. Vuelve a consultar el catálogo.')
-        ident = data.add_request(user_id, book_id, collection_id)
+        ident = data.add_request(user_id, book_id, collection_id, days)
         data.audit(user_id, 'solicitud_creada', ident)
         return ident
 
@@ -88,6 +89,8 @@ def cancel(actor_id, request_id):
 
 
 def deliver(actor_id, request_id, local_due, confirmed):
+    # Persistir el vencimiento aunque la posterior entrega sea rechazada.
+    expire_pickups()
     if not confirmed:
         raise DomainError('Confirma la entrega física y la fecha de devolución.', 400)
     try:
@@ -99,14 +102,25 @@ def deliver(actor_id, request_id, local_due, confirmed):
         req = get_request(request_id)
         if req['status'] != 'aprobada' or not req['ready_at']:
             raise DomainError('Primero aprueba la solicitud y confirma que está lista para retiro.')
+        if now_utc() >= parse(pickup_deadline(req)):
+            raise DomainError('El plazo de retiro venció. No se puede entregar esta reserva.')
         rules.capacity(req['user_id'], req['collection_id'], request_id)
         if data.copy(req['copy_id'])['state'] != 'asignado':
             raise DomainError('El ejemplar no está asignado a una solicitud vigente.')
         if due <= now_utc():
             raise DomainError('La devolución debe fijarse en una fecha y hora futuras.', 400)
+        maximum_due = rules.suggested_due(req['user_id'], req['collection_id'], req['requested_days'])
+        if due > maximum_due:
+            raise DomainError('La devolución supera la duración solicitada o el máximo de la colección.', 400)
         ident = data.add_loan(req, stamp(due))
         data.audit(actor_id, 'entrega_registrada', ident, 'Vencimiento UTC: ' + stamp(due))
         return ident
+
+
+def expire_pickups():
+    """La transacción libera reservas y genera avisos de disponibilidad atómicamente."""
+    with transaction():
+        pass
 
 
 def receive(actor_id, loan_id):

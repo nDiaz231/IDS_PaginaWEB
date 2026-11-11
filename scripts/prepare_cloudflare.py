@@ -15,9 +15,11 @@ def prepare():
         shutil.rmtree(target)
     shutil.copytree(source, target, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     schema = (source / 'schema.sql').read_text(encoding='utf-8') + '\n' + (source / 'migrations/002_favorites_security.sql').read_text(encoding='utf-8')
+    schema += '\n' + (source / 'migrations/003_requested_days.sql').read_text(encoding='utf-8')
+    schema += '\n' + (source / 'migrations/004_utilities.sql').read_text(encoding='utf-8')
     templates = {str(p.relative_to(source / 'templates')): p.read_text(encoding='utf-8')
                  for p in sorted((source / 'templates').rglob('*.html'))}
-    static = {p.name: (p.read_text(encoding='utf-8'), mimetypes.guess_type(p.name)[0] or 'text/plain')
+    static = {p.name: (p.read_bytes(), mimetypes.guess_type(p.name)[0] or 'application/octet-stream')
               for p in sorted((source / 'static').iterdir()) if p.is_file()}
     (package / 'cloud_bundle.py').write_text(
         'SCHEMA = ' + repr(schema) + '\nTEMPLATES = ' + repr(templates) + '\nSTATIC = ' + repr(static) + '\n', encoding='utf-8')

@@ -5,6 +5,16 @@ from flask import current_app
 
 SANTIAGO = ZoneInfo('America/Santiago')
 UTC = timezone.utc
+PICKUP_HOURS = 24
+PICKUP_EXPIRED_REASON = 'Plazo de retiro de 24 horas vencido. El ejemplar fue liberado.'
+
+
+def pickup_deadline(row):
+    return stamp(parse(row['ready_at']) + timedelta(hours=PICKUP_HOURS)) if row.get('ready_at') else None
+
+
+def pickup_expired(row):
+    return row['status'] == 'cancelada' and row.get('rejection_reason') == PICKUP_EXPIRED_REASON
 
 
 def now_utc():

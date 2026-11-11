@@ -54,8 +54,11 @@ def audit_log():
 
 
 # Catálogo y ejemplares
-def books(q='', category='', availability=''):
+def books(q='', category='', availability='', resource_type=None):
     filters, args = [], []
+    if resource_type:
+        filters.append('b.resource_type=?')
+        args.append(resource_type)
     if q:
         filters.append('(instr(normalize(b.title),normalize(?))>0 OR instr(normalize(b.author),normalize(?))>0 OR instr(normalize(b.category),normalize(?))>0)')
         args += [q, q, q]
@@ -69,8 +72,8 @@ def books(q='', category='', availability=''):
     return many("SELECT b.*, (SELECT count(*) FROM copy_inventory c WHERE c.book_id=b.id AND c.state='disponible') AS available, (SELECT count(*) FROM copies c WHERE c.book_id=b.id AND c.retired_at IS NULL) AS total FROM books b" + where + ' ORDER BY normalize(title)', args)
 
 
-def categories():
-    return [r['category'] for r in many('SELECT DISTINCT category FROM books ORDER BY category')]
+def categories(resource_type='book'):
+    return [r['category'] for r in many('SELECT DISTINCT category FROM books WHERE resource_type=? ORDER BY category', (resource_type,))]
 
 
 def book(book_id):
@@ -78,8 +81,8 @@ def book(book_id):
 
 
 def add_book(values):
-    return write('INSERT INTO books(title,author,category,isbn,publication_year,description) VALUES(?,?,?,?,?,?)',
-                 tuple(values[k] for k in ('title','author','category','isbn','publication_year','description'))).lastrowid
+    return write('INSERT INTO books(title,author,category,isbn,publication_year,description,resource_type) VALUES(?,?,?,?,?,?,?)',
+                 tuple(values[k] for k in ('title','author','category','isbn','publication_year','description')) + (values.get('resource_type','book'),)).lastrowid
 
 
 def edit_book(book_id, values):
@@ -190,9 +193,9 @@ def loan(loan_id):
     return one(LOAN_SELECT + ' WHERE l.id=?', (loan_id,))
 
 
-def add_request(user_id, book_id, collection_id):
-    return write('INSERT INTO requests(user_id,book_id,collection_id,created_at) VALUES(?,?,?,?)',
-                 (user_id,book_id,collection_id,stamp())).lastrowid
+def add_request(user_id, book_id, collection_id, requested_days=None):
+    return write('INSERT INTO requests(user_id,book_id,collection_id,created_at,requested_days) VALUES(?,?,?,?,?)',
+                 (user_id,book_id,collection_id,stamp(),requested_days)).lastrowid
 
 
 def approve_request(request_id, copy_id):
@@ -205,6 +208,18 @@ def ready_request(request_id):
 
 def close_request(request_id, state, reason=''):
     write('UPDATE requests SET status=?,closed_at=?,rejection_reason=? WHERE id=?', (state,stamp(),reason,request_id))
+
+
+def expire_pickups():
+    """Invocar dentro de una transacción; conserva el historial como cancelación automática."""
+    from datetime import timedelta
+    from .timeutils import now_utc, PICKUP_HOURS, PICKUP_EXPIRED_REASON
+    cutoff = stamp(now_utc() - timedelta(hours=PICKUP_HOURS))
+    rows = many("SELECT id FROM requests WHERE status='aprobada' AND ready_at IS NOT NULL AND ready_at<=?", (cutoff,))
+    for row in rows:
+        close_request(row['id'], 'cancelada', PICKUP_EXPIRED_REASON)
+        audit(None, 'reserva_vencida', row['id'], PICKUP_EXPIRED_REASON)
+    return len(rows)
 
 
 def add_loan(req, due_at):

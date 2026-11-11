@@ -34,7 +34,7 @@ def my_loans():
 @bp.post('/libros/<int:book_id>/solicitar')
 @role_required('alumno')
 def submit(book_id):
-    ident = circulation.submit(g.user['id'],book_id,request.form.get('collection_id',''))
+    ident = circulation.submit(g.user['id'],book_id,request.form.get('collection_id',''),request.form.get('requested_days',''))
     flash('Solicitud enviada. Biblioteca debe revisarla; todavía no asegura un ejemplar.','success')
     return redirect(url_for('views.request_detail',request_id=ident))
 
@@ -46,7 +46,7 @@ def request_detail(request_id):
     if not row or (g.user['role']!='admin' and row['user_id']!=g.user['id']):
         abort(404)
     options = data.copies(row['book_id'],True,row['collection_id']) if g.user['role']=='admin' else []
-    suggested = rules.suggested_due(row['user_id'],row['collection_id'])
+    suggested = rules.suggested_due(row['user_id'],row['collection_id'],row['requested_days'])
     return render_template('request.html',row=row,options=options,suggested=local_input(suggested) if suggested else '')
 
 

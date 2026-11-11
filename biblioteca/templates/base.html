@@ -7,7 +7,7 @@
   <meta name="description" content="Biblioteca Mejorada: prototipo académico de acceso a libros para estudiantes. ODS 10, UCN Coquimbo.">
   <title>{% block title %}Biblioteca Mejorada{% endblock %} · UCN Coquimbo</title>
   <link rel="stylesheet" href="{{ url_for('static',filename='styles.css') }}">
-  <link rel="icon" href="{{ url_for('static',filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static',filename='ucn-logo.png') }}" type="image/png">
   <script defer src="{{ url_for('static',filename='app.js') }}">
 </script>
 </head>
@@ -22,11 +22,7 @@
   <header class="header">
     <div class="container header-inner">
       <a class="brand" href="{{ url_for('views.home') }}" aria-label="Biblioteca Mejorada, inicio">
-<span class="brand-mark" aria-hidden="true">
-<svg viewBox="0 0 32 32" fill="none">
-<path d="M16 8C12 5 7 5 3 6v19c5-1 9 0 13 3 4-3 8-4 13-3V6c-4-1-9-1-13 2Zm0 0v20" stroke="currentColor" stroke-width="2"/>
-</svg>
-</span>
+<img class="brand-logo" src="{{ url_for('static',filename='ucn-logo.png') }}" alt="Universidad Católica del Norte" width="64" height="64">
 <span>Biblioteca <strong>Mejorada</strong>
 <small>Biblioteca UCN · Coquimbo</small>
 </span>
@@ -39,7 +35,7 @@
 </div>{% endif %}
     </div>
     {% if g.user %}<nav class="container nav" aria-label="Navegación principal">
-      {% set links = [('views.home','Mi inicio'),('catalog.index','Catálogo'),('favorites.index','Favoritos'),('favorites.notices','Avisos' ~ (' · ' ~ unread_count if unread_count else '')),('views.my_requests','Mis solicitudes'),('views.my_loans','Mis préstamos'),('views.regulations','Reglas de préstamo')] if g.user.role=='alumno' else [('views.admin_requests','Solicitudes'),('views.admin_loans','Préstamos'),('catalog.index','Catálogo y ejemplares'),('views.students','Alumnos'),('views.regulations','Reglas'),('views.activity','Actividad')] %}
+      {% set links = [('views.home','Mi inicio'),('catalog.index','Libros'),('catalog.utilities','Utilidades'),('favorites.index','Favoritos'),('favorites.notices','Avisos' ~ (' · ' ~ unread_count if unread_count else '')),('views.my_requests','Mis solicitudes'),('views.my_loans','Mis préstamos'),('views.regulations','Reglas de préstamo')] if g.user.role=='alumno' else [('views.admin_requests','Solicitudes'),('views.admin_loans','Préstamos'),('catalog.index','Libros'),('catalog.utilities','Utilidades'),('views.students','Alumnos'),('views.regulations','Reglas'),('views.activity','Actividad')] %}
       {% for endpoint,label in links %}<a href="{{ url_for(endpoint) }}" {% if request.endpoint==endpoint %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
     </nav>{% endif %}
   </header>

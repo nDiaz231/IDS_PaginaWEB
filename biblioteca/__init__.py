@@ -9,7 +9,7 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from werkzeug.exceptions import SecurityError
 from . import db, data
 from .errors import DomainError
-from .timeutils import display, due_notice
+from .timeutils import display, due_notice, pickup_deadline, pickup_expired
 
 
 def create_app(test_config=None):
@@ -55,12 +55,18 @@ def create_app(test_config=None):
     from .cloud_accounts import bp as cloud_accounts_bp
     app.register_blueprint(cloud_accounts_bp)
     app.before_request(load_user)
+    @app.before_request
+    def refresh_pickups():
+        from flask import request
+        if request.endpoint and request.endpoint != 'static':
+            from .circulation import expire_pickups
+            expire_pickups()
     for blueprint in (auth_bp, catalog_bp, views_bp, favorites_bp):
         app.register_blueprint(blueprint)
     from .commands import register_commands
     register_commands(app)
     app.jinja_env.filters['localdate'] = display
-    app.jinja_env.globals.update(due_notice=due_notice)
+    app.jinja_env.globals.update(due_notice=due_notice, pickup_deadline=pickup_deadline, pickup_expired=pickup_expired)
 
     @app.context_processor
     def notification_count():
@@ -71,7 +77,7 @@ def create_app(test_config=None):
 
     @app.get('/healthz')
     def health():
-        ready = data.metadata('schema_version')=='2'
+        ready = data.metadata('schema_version')=='4'
         return {'status':'ok' if ready else 'unavailable'}, (200 if ready else 503)
 
     @app.after_request

@@ -13,16 +13,16 @@
 <th>Tipo de usuario</th>
 <th>Colección</th>
 <th>Cupo independiente</th>
-<th>Plazo sugerido</th>
-<th>Hora sugerida</th>
+<th>Plazo máximo</th>
+<th>Inicio del plazo</th>
 </tr>
 </thead>
 <tbody>{% for rule in rules %}<tr>
 <td>{{ rule.type_name }}</td>
 <td>{{ rule.collection_name }}</td>
 <td>{{ rule.max_items }} ejemplares</td>
-<td>{{ rule.loan_days }} días</td>
-<td>{{ '%02d'|format(rule.due_hour) }}:00</td>
+<td>{{ 14 if rule.collection_id=='alta_demanda' else 30 }} días</td>
+<td>Al entregar el ejemplar</td>
 </tr>{% endfor %}</tbody>
 </table>
 </div>
@@ -35,6 +35,8 @@
 <li>Una solicitud pendiente no retiene ejemplares ni consume cupo.</li>
 <li>La aprobación asigna una copia. Solo la entrega física inicia el préstamo.</li>
 <li>El administrador confirma la fecha y hora exactas de devolución.</li>
+<li>El estudiante elige entre 1 y 14 días para alta demanda, o entre 1 y 30 días para baja demanda. Un mes equivale aquí a 30 días.</li>
+<li>Hay 24 horas para retirar desde «Listo para retirar». Después se libera la reserva.</li>
 <li>Los avisos de próximo vencimiento aparecen hasta {{ threshold }} horas antes. Este umbral es una decisión del prototipo.</li>
 </ul>
 </section>
@@ -43,15 +45,15 @@
 <ul>
 <li>Días hábiles, fines de semana, feriados y horarios efectivos de devolución. La sugerencia usa días calendario.</li>
 <li>Automatización de multas y duración de sanciones: las fuentes contienen indicaciones diferentes.</li>
-<li>Vigencia de asignaciones sin retiro, reglas de otros tipos de usuarios y colecciones.</li>
+<li>Reglas de otros tipos de usuarios y colecciones.</li>
 <li>Datos e identificación institucional. Este prototipo usa información ficticia.</li>
 </ul>
 <p class="small muted">No se calculan multas. Biblioteca administra la habilitación de las cuentas.</p>
 </section>
 </div>
 <section class="panel sources">
-<h2>Referencias oficiales revisadas</h2>
-<p class="muted">Consulta realizada el 28/10/2026. Valores iniciales para pregrado: general 6 / 3 días / 18:00; alta demanda 3 / 3 días / 19:00.</p>
+<h2>Referencias institucionales</h2>
+<p class="muted">Los plazos de 14 y 30 días son decisiones de este prototipo y no representan una modificación de las reglas oficiales de la universidad.</p>
 <ul>
 <li>
 <a href="https://bibliotecas.ucn.cl/wp-content/uploads/2021/08/Reglamento-Unificado-Bibliotecas-UCN-2021-Decreto-82-2021.pdf">Reglamento UCN · Decreto 82/2021</a> — artículos 6, 16, 17 y 29.</li>

@@ -15,13 +15,19 @@ def text_field(form, name, label, maximum, required=True):
     return value
 
 
+UTILITY_CATEGORIES = ('Juegos de mesa', 'Plumones', 'Cables', 'Laptops', 'Cargadores')
+
+
+@bp.get('/utilidades', endpoint='utilities')
 @bp.get('/catalogo')
 @login_required
 def index():
+    utilities = request.endpoint == 'catalog.utilities'
+    kind = 'utility' if utilities else 'book'
     q = request.args.get('q','').strip()[:180]
     category = request.args.get('category','')[:80]
     availability = request.args.get('availability','')
-    return render_template('catalog.html', books=data.books(q,category,availability), categories=data.categories(), q=q, category=category, availability=availability, favorite_ids=data.favorite_ids(g.user['id']))
+    return render_template('catalog.html', utilities=utilities, books=data.books(q,category,availability,kind), categories=UTILITY_CATEGORIES if utilities else data.categories(), q=q, category=category, availability=availability, favorite_ids=data.favorite_ids(g.user['id']))
 
 
 @bp.get('/libros/<int:book_id>')
@@ -42,12 +48,18 @@ def book_form(book_id=None):
     book = data.book(book_id) if book_id else {}
     if book_id and not book:
         abort(404)
+    utilities = book.get('resource_type') == 'utility' if book_id else request.args.get('type') == 'utility'
     error = None
     if request.method == 'POST':
         book = dict(request.form)
         try:
             values = {name:text_field(request.form,name,label,limit,required) for name,label,limit,required in (
-                ('title','Título',180,True),('author','Autor',180,True),('category','Categoría',80,True),('isbn','ISBN / referencia',30,False),('description','Descripción',2000,False))}
+                ('title','Nombre',180,True),('author','Autor / marca',180,not utilities),('category','Categoría',80,True),('isbn','ISBN / referencia',30,False),('description','Descripción',2000,False))}
+            values['resource_type'] = 'utility' if utilities else 'book'
+            if utilities and not values['author']:
+                values['author'] = 'Marca no indicada'
+            if utilities and values['category'] not in UTILITY_CATEGORIES:
+                raise DomainError('Selecciona una categoría de utilidades válida.',400)
             year = request.form.get('publication_year','').strip()
             if year and (not re.fullmatch(r'\d{4}',year) or not 1000 <= int(year) <= 2100):
                 raise DomainError('El año debe estar entre 1000 y 2100.',400)
@@ -58,11 +70,11 @@ def book_form(book_id=None):
                 else:
                     book_id = data.add_book(values)
                 data.audit(g.user['id'],'libro_guardado',book_id)
-            flash('Datos del libro guardados.','success')
+            flash('Datos guardados.','success')
             return redirect(url_for('catalog.detail',book_id=book_id))
         except DomainError as exc:
             error = exc.message
-    return render_template('book_form.html',book=book,book_id=book_id,error=error), (400 if error else 200)
+    return render_template('book_form.html',book=book,book_id=book_id,error=error,utilities=utilities,utility_categories=UTILITY_CATEGORIES), (400 if error else 200)
 
 
 @bp.route('/admin/libros/<int:book_id>/ejemplares/nuevo', methods=['GET','POST'])

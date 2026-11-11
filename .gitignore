@@ -1,0 +1,11 @@
+.venv/
+.env
+instance/
+__pycache__/
+*.pyc
+.pytest_cache/
+python_modules/
+.wrangler/
+node_modules/
+*.log
+work/

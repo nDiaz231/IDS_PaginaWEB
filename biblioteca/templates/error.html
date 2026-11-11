@@ -3,5 +3,5 @@
 <h1>No pudimos completar la acción</h1>
 <p role="alert">{{ message }}</p>
 <div class="actions">
-<a class="button" href="{{ url_for('views.home') }}">Volver al inicio</a>{% if g.user %}<a class="button secondary" href="{{ url_for('catalog.index') }}">Ir al catálogo</a>{% else %}<a class="button secondary" href="{{ url_for('auth.login') }}">Ingresar</a>{% endif %}</div>
+<a class="button" href="{{ url_for('views.home') }}">Volver al inicio</a>{% if g.user %}<a class="button secondary" href="{{ url_for('catalog.index') }}">Ir a libros</a>{% else %}<a class="button secondary" href="{{ url_for('auth.login') }}">Ingresar</a>{% endif %}</div>
 </section>{% endblock %}

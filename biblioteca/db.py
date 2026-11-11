@@ -1,7 +1,7 @@
 """Conexión por contexto Flask y transacciones de escritura serializadas."""
 import sqlite3
 import unicodedata
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from pathlib import Path
 from flask import current_app, g
 
@@ -43,6 +43,7 @@ def transaction():
     conn.execute('BEGIN IMMEDIATE')
     try:
         before = data.available_book_ids()
+        data.expire_pickups()
         yield conn
         # El aviso y la operación se confirman juntos; un rollback revierte ambos.
         for book_id in data.available_book_ids() - before:
@@ -61,7 +62,7 @@ def initialize():
     with path.open('xb'):
         pass
     try:
-        with sqlite3.connect(path) as conn:
+        with closing(sqlite3.connect(path)) as conn:
             conn.execute('PRAGMA journal_mode = WAL')
             conn.executescript(Path(__file__).with_name('schema.sql').read_text(encoding='utf-8'))
             conn.executescript(migration_sql())
@@ -71,7 +72,8 @@ def initialize():
 
 
 def migration_sql():
-    return (Path(__file__).parent / 'migrations/002_favorites_security.sql').read_text(encoding='utf-8')
+    folder = Path(__file__).parent / 'migrations'
+    return (folder / '002_favorites_security.sql').read_text(encoding='utf-8') + '\n' + (folder / '003_requested_days.sql').read_text(encoding='utf-8') + '\n' + (folder / '004_utilities.sql').read_text(encoding='utf-8')
 
 
 def backup(destination):
@@ -80,7 +82,7 @@ def backup(destination):
     with destination.open('xb'):
         pass
     try:
-        with sqlite3.connect(destination) as target:
+        with closing(sqlite3.connect(destination)) as target:
             get_db().backup(target)
     except BaseException:
         destination.unlink(missing_ok=True)
@@ -92,15 +94,19 @@ def upgrade():
     from . import data
     from datetime import datetime, timezone
     version = data.metadata('schema_version')
-    if version == '2':
+    if version == '4':
         return None
-    if version != '1':
+    if version not in ('1', '2', '3'):
         raise RuntimeError('Versión de base no reconocida. No se modificó.')
-    filename = 'antes-v2-' + datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f') + '.sqlite3'
+    filename = 'antes-v4-' + datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f') + '.sqlite3'
     saved = backup(Path(current_app.config['DATABASE']).parent / 'backups' / filename)
     conn = get_db()
     try:
-        conn.executescript(migration_sql())
+        if version == '1':
+            conn.executescript((Path(__file__).parent / 'migrations/002_favorites_security.sql').read_text(encoding='utf-8'))
+        if version in ('1', '2'):
+            conn.executescript('BEGIN IMMEDIATE;\n' + (Path(__file__).parent / 'migrations/003_requested_days.sql').read_text(encoding='utf-8') + '\nCOMMIT;')
+        conn.executescript('BEGIN IMMEDIATE;\n' + (Path(__file__).parent / 'migrations/004_utilities.sql').read_text(encoding='utf-8') + '\nCOMMIT;')
     except BaseException:
         conn.rollback()
         raise

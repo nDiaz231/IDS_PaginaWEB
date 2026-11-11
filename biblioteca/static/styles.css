@@ -141,6 +141,16 @@ strong {
   color:var(--muted);
   margin-top:6px
 }
+.brand-logo {
+  width:64px;
+  height:64px;
+  object-fit:contain;
+  flex-shrink:0;
+  display:block
+}
+@media (max-width:600px) {
+  .brand-logo { width:48px; height:48px }
+}
 .brand-mark {
   width:45px;
   height:45px;
@@ -1240,6 +1250,34 @@ td a {
   text-underline-offset:4px;
   min-height:40px
 }
+.favorite-star {
+  width:1.2em;
+  height:1.2em;
+  fill:#fff;
+  stroke:#767676;
+  stroke-width:1.6;
+  stroke-linejoin:round;
+  vertical-align:-.2em;
+  display:inline-block;
+  flex-shrink:0
+}
+.favorite-star.is-favorite { fill:#dca520; stroke:#a66b00 }
+.favorite-status:not(:empty) {
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:100;
+  width:max-content;
+  max-width:calc(100% - 32px);
+  padding:12px 18px;
+  border-radius:8px;
+  background:#123552;
+  color:#fff;
+  box-shadow:0 4px 18px #0003;
+  pointer-events:none
+}
+[data-favorite] button[aria-busy="true"] { opacity:.65; cursor:wait }
 .personal-tools {
   border-block:1px solid var(--line);
   padding:22px 0;

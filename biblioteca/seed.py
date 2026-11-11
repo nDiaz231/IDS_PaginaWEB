@@ -62,6 +62,8 @@ def seed_demo():
                     current_app.config['CLOCK'] = lambda: now-timedelta(days=6)
                     data.approve_request(ident,copies[index][0])
                     if ready or state=='atendida':
+                        if state == 'aprobada':
+                            current_app.config['CLOCK'] = lambda: now
                         data.ready_request(ident)
                     if state=='atendida':
                         loan_id=data.add_loan(data.request(ident),stamp(due))
@@ -96,3 +98,26 @@ def seed_demo():
             current_app.config.pop('CLOCK',None)
         else:
             current_app.config['CLOCK']=original_clock
+
+
+def seed_utilities_demo():
+    """Solo para el lanzador local; se carga una vez sin tocar registros previos."""
+    if data.metadata('utilities_demo_seeded'):
+        return
+    with transaction():
+        for index, (title, category, quantity) in enumerate([
+            ('Ajedrez', 'Juegos de mesa', 3),
+            ('Dominó', 'Juegos de mesa', 2),
+            ('Set de plumones para pizarra', 'Plumones', 5),
+            ('Cable HDMI', 'Cables', 4),
+            ('Cable USB-C', 'Cables', 4),
+            ('Laptop para estudio', 'Laptops', 2),
+            ('Cargador USB-C', 'Cargadores', 3),
+        ], 1):
+            resource = data.add_book(dict(title=title, author='Biblioteca · Demo',
+                category=category, isbn=f'DEMO-UTIL-{index:02}', publication_year=None,
+                description='Artículo y existencias ficticias para probar BiblioUCN. No representan el inventario real de la universidad.',
+                resource_type='utility'))
+            for unit in range(1, quantity + 1):
+                data.add_copy(resource, f'DEMO-U{index:02}-{unit:02}', 'general', 'Mostrador de utilidades · Demo')
+        data.write("INSERT INTO metadata(key,value) VALUES('utilities_demo_seeded','1')")

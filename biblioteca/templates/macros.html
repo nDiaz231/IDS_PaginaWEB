@@ -1,6 +1,6 @@
 {% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
 {% macro badge(status) %}
-<span class="badge badge-{{ status }}">{{ {'pendiente':'Pendiente','aprobada':'Aprobada para retiro','rechazada':'Rechazada','cancelada':'Cancelada','atendida':'Atendida','activo':'Activo','devuelto':'Devuelto','disponible':'Disponible','asignado':'Asignado para retiro','prestado':'Prestado','baja':'Dado de baja'}.get(status,status) }}</span>
+<span class="badge badge-{{ status }}">{{ {'vencida':'Reserva vencida','pendiente':'Pendiente','aprobada':'Aprobada para retiro','rechazada':'Rechazada','cancelada':'Cancelada','atendida':'Atendida','activo':'Activo','devuelto':'Devuelto','disponible':'Disponible','asignado':'Asignado para retiro','prestado':'Prestado','baja':'Dado de baja'}.get(status,status) }}</span>
 {% endmacro %}
 {% macro book_list(books, favorite_ids, return_to) %}
 <div class="catalog-list">
@@ -11,7 +11,7 @@
 <h3>
 <a href="{{ url_for('catalog.detail',book_id=book.id) }}">{{ book.title }}</a>
 </h3>
-<p>{{ book.author }} <span class="muted">· {{ book.publication_year or 'Sin año' }}</span>
+<p>{{ book.author }} <span class="muted">· {{ book.publication_year or ('Artículo de biblioteca' if book.resource_type=='utility' else 'Sin año') }}</span>
 </p>
 </div>
   <div class="catalog-status">
@@ -20,9 +20,9 @@
 </div>
   <div class="catalog-actions">
 <a class="button secondary" href="{{ url_for('catalog.detail',book_id=book.id) }}">Ver ficha</a>
-  {% if g.user.role=='alumno' %}<form method="post" action="{{ url_for('favorites.favorite',book_id=book.id) }}">{{ csrf() }}<input type="hidden" name="return_to" value="{{ return_to }}">
+  {% if g.user.role=='alumno' %}<form method="post" action="{{ url_for('favorites.favorite',book_id=book.id) }}" data-favorite data-title="{{ book.title }}">{{ csrf() }}<input type="hidden" name="return_to" value="{{ return_to }}">
 <input type="hidden" name="action" value="{{ 'remove' if book.id in favorite_ids else 'add' }}">
-<button class="save-button" aria-label="{{ 'Quitar de favoritos' if book.id in favorite_ids else 'Guardar en favoritos' }}: {{ book.title }}">{{ 'Guardado · quitar' if book.id in favorite_ids else 'Guardar' }}</button>
+<button class="save-button" aria-label="{{ 'Quitar de favoritos' if book.id in favorite_ids else 'Agregar a favoritos' }}: {{ book.title }}"><svg class="favorite-star{{ ' is-favorite' if book.id in favorite_ids else '' }}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2L5.8 21 7 14.2 2 9.3l6.9-1z"/></svg> {{ 'Quitar de favoritos' if book.id in favorite_ids else 'Agregar a favoritos' }}</button>
 </form>{% endif %}</div>
 </article>
 {% endfor %}
@@ -32,5 +32,5 @@
 <span class="empty-symbol" aria-hidden="true">↗</span>
 <h2>{{ title }}</h2>
 <p>{{ description }}</p>
-<a class="button secondary" href="{{ url_for('catalog.index') }}">Explorar catálogo</a>
+<a class="button secondary" href="{{ url_for('catalog.utilities' if utilities else 'catalog.index') }}">Explorar {{ 'utilidades' if utilities else 'libros' }}</a>
 </div>{% endmacro %}

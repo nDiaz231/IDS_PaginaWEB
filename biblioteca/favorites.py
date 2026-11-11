@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, g, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, g, redirect, url_for, flash, abort, jsonify
 from . import data
 from .auth import role_required
 from .db import transaction
@@ -11,11 +11,9 @@ bp = Blueprint('favorites',__name__)
 @role_required('alumno')
 def index():
     saved = data.favorite_ids(g.user['id'])
-    watched = data.watched_ids(g.user['id'])
     books = data.books()
     return render_template('favorites.html',books=[b for b in books if b['id'] in saved],
-                           watched_books=[b for b in books if b['id'] in watched],
-                           favorite_ids=saved,watched_ids=watched)
+                           favorite_ids=saved)
 
 
 @bp.post('/libros/<int:book_id>/favorito',endpoint='favorite')
@@ -36,11 +34,17 @@ def preference(book_id):
             data.set_watch(g.user['id'],book_id,enabled)
         else:
             data.set_favorite(g.user['id'],book_id,enabled)
-    message = ('Aviso activado.' if enabled else 'Aviso desactivado.') if watching else ('Libro guardado en Favoritos.' if enabled else 'Libro quitado de Favoritos.')
+    message = ('Aviso activado.' if enabled else 'Aviso desactivado.') if watching else ('Artículo agregado a Favoritos.' if enabled else 'Artículo quitado de Favoritos.')
+    if not watching and request.headers.get('Accept') == 'application/json':
+        return jsonify(favorite=enabled, message=message)
     flash(message,'success')
     destination = request.form.get('return_to')
+    if destination=='notices':
+        return redirect(url_for('favorites.notices', _anchor='avisos-activados'))
     if destination=='favorites':
         return redirect(url_for('favorites.index'))
+    if destination=='utilities':
+        return redirect(url_for('catalog.utilities'))
     if destination=='catalog':
         return redirect(url_for('catalog.index'))
     return redirect(url_for('catalog.detail',book_id=book_id))
@@ -49,7 +53,9 @@ def preference(book_id):
 @bp.get('/avisos')
 @role_required('alumno')
 def notices():
-    return render_template('notifications.html',notifications=data.notifications(g.user['id']))
+    watched = data.watched_ids(g.user['id'])
+    watched_books = [book for book in data.books() if book['id'] in watched]
+    return render_template('notifications.html',notifications=data.notifications(g.user['id']), watched_books=watched_books)
 
 
 @bp.post('/avisos/<int:notification_id>/leido')
