@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% block title %}Crear cuenta{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ url_for('auth.login') }}">← Volver a iniciar sesión</a>
+<div class="form-page registration-page">
+<p class="eyebrow">BIBLIOUCN · COMUNIDAD UNIVERSITARIA</p>
+<h1>Crear cuenta</h1>
+<p class="muted">Usa tu correo institucional. Todos los campos son obligatorios.</p>
+{% if error %}<div class="notice danger" role="alert" tabindex="-1" data-error>{{ error }}</div>{% endif %}
+<form method="post" class="panel stack">{{ csrf() }}
+<div><label for="name">Nombre completo y apellidos</label>
+<input id="name" name="name" autocomplete="name" required minlength="5" maxlength="120" value="{{ request.form.get('name','') }}"></div>
+<div><label for="email">Correo institucional</label>
+<input id="email" name="email" type="email" autocomplete="username" required maxlength="254" aria-describedby="email-help" value="{{ request.form.get('email','') }}" placeholder="nombre@alumnos.ucn.cl">
+<p class="small muted" id="email-help">Solo @alumnos.ucn.cl o @ce.ucn.cl.</p></div>
+<div><label for="rut">RUT con dígito verificador</label>
+<input id="rut" name="rut" required maxlength="16" spellcheck="false" autocapitalize="characters" aria-describedby="rut-help" value="{{ request.form.get('rut','') }}" placeholder="12.345.678-5">
+<p class="small muted" id="rut-help">Con o sin puntos, incluyendo el dígito verificador. Se usará para validar tu identidad.</p></div>
+<div class="form-grid">
+<div><label for="admission_year">Año de ingreso</label>
+<input id="admission_year" name="admission_year" type="number" inputmode="numeric" min="1900" max="{{ current_year }}" required value="{{ request.form.get('admission_year','') }}"></div>
+<div><label for="career">Carrera</label>
+<input id="career" name="career" required minlength="3" maxlength="120" value="{{ request.form.get('career','') }}" placeholder="Nombre de tu carrera"></div>
+</div>
+<div><label for="password">Contraseña de BiblioUCN</label>
+<input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="200" required aria-describedby="password-help">
+<p class="small muted" id="password-help">Entre 8 y 200 caracteres, al menos una mayúscula y un carácter especial como !, @ o #. Elige una contraseña propia para BiblioUCN.</p></div>
+<div><label for="password_confirm">Repetir contraseña</label>
+<input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" minlength="8" maxlength="200" required></div>
+<p class="small muted">Administración revisará tu identidad, tus datos y la titularidad del correo antes de habilitar el acceso. Tus datos de registro son privados y solo los puede revisar administración.</p>
+<button class="button" type="submit">Crear cuenta y enviar a validación</button>
+</form></div>
+{% endblock %}

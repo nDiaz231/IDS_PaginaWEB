@@ -25,7 +25,7 @@ def register_commands(app):
     def upgrade_db():
         """Actualiza la versión 1 conservando sus registros y una copia previa."""
         saved = db.upgrade()
-        click.echo(f'Base actualizada. Respaldo previo: {saved}' if saved else 'Base en versión 4; no se modificó.')
+        click.echo(f'Base actualizada. Respaldo previo: {saved}' if saved else 'Base en versión 5; no se modificó.')
 
     @app.cli.command('backup-db')
     @click.argument('destination', type=click.Path(path_type=Path))
@@ -48,6 +48,13 @@ def register_commands(app):
             raise click.ClickException('El nombre debe tener entre 2 y 120 caracteres.')
         if data.user_by_email(email):
             raise click.ClickException('Ese correo ya está registrado.')
+        if role == 'alumno':
+            from .registration import institutional_email
+            from .errors import DomainError
+            try:
+                email = institutional_email(email)
+            except DomainError as exc:
+                raise click.ClickException(exc.message) from exc
         password_hash = ask_password()
         with db.transaction():
             ident = data.add_user(email,name,password_hash,role=role)

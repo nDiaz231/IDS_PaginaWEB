@@ -138,6 +138,16 @@ Abre [http://127.0.0.1:5000](http://127.0.0.1:5000). El servidor de desarrollo s
 └── wrangler.jsonc          # Configuración de Cloudflare
 ```
 
+## Registro de alumnos
+
+En la pantalla de acceso, **Crear cuenta** permite solicitar una cuenta con correo
+`@alumnos.ucn.cl` o `@ce.ucn.cl`, nombre completo, RUT, año de ingreso y carrera.
+La contraseña requiere al menos 8 caracteres, una mayúscula y un símbolo.
+La cuenta permanece pendiente de validación institucional por administración;
+comprobar el dominio y el dígito verificador no verifica identidad ni propiedad del correo.
+Los datos se guardan en la base configurada, localmente durante esta etapa.
+Consulta [la guía de pruebas y controles de seguridad](LOCAL_PREVIEW.md#registro-de-alumnos).
+
 ## Publicación
 
 El workflow [Publicar Biblioteca en Cloudflare](.github/workflows/publicar.yml) se ejecuta manualmente desde GitHub Actions.

@@ -64,3 +64,47 @@ la colección de demanda; falta acordar políticas específicas para cada materi
 La migración 4 conserva los libros existentes y crea un respaldo al actualizar.
 El lanzador local añade una sola vez siete artículos ficticios de utilidades,
 identificados como demostración. Esta carga no se ejecuta en producción.
+
+
+## Registro de alumnos
+
+Desde Iniciar sesión, el botón Crear cuenta abre `/crear-cuenta`.
+Solo acepta `@alumnos.ucn.cl` y `@ce.ucn.cl`, sin subdominios ni sufijos adicionales.
+Pide nombre completo, RUT con dígito verificador, año de ingreso, carrera,
+contraseña (8–200 caracteres, una mayúscula y un símbolo) y confirmación.
+
+El registro persiste en `instance/demo.sqlite3`, independiente del repositorio.
+La cuenta queda inactiva y sin préstamos hasta revisión. Entra como administrador,
+abre Alumnos → Revisar registro y confirma identidad, datos y titularidad del correo
+por un canal institucional antes de habilitar. Cambiar la habilitación o la clave
+no permite saltarse esa revisión. No hay envío automático de correos.
+Las cuentas antiguas y de demostración se conservan.
+
+La migración 5 genera un respaldo previo. La migración equivalente para D1 está
+preparada, pero aún no se han conectado ni publicado servicios en la nube.
+
+### Controles del registro
+
+- Validación en servidor; consultas con parámetros; salida HTML escapada.
+- RUT único normalizado; correo único sin distinguir mayúsculas.
+- Cuenta nueva siempre alumno, sin permisos tomados del formulario.
+- Contraseñas PBKDF2-HMAC-SHA256 con sal y 600 000 iteraciones; nunca texto plano.
+  El formato de Workers añade un pepper y sigue aceptando hashes antiguos.
+- CSRF, cookies HttpOnly/SameSite, CSP y respuestas privadas sin caché.
+- Límites persistentes por origen: 5 intentos/15 min y 30/día; globales:
+  50/15 min y 500/día. Se aplican antes de derivar la contraseña. No confía en
+  cabeceras IP enviadas directamente al servidor local.
+- Formularios de hasta 64 KiB, 20 partes y campos multipart de hasta 16 KiB.
+- Respuesta genérica para correos o RUT ya existentes. No reemplaza sus datos.
+- Perfil privado accesible solo a administración; no se incluyen RUT ni claves
+  en cookies o auditoría. Las bases y respaldos deben mantenerse fuera de Git.
+
+Estos controles reducen abuso; no garantizan inmunidad a exploits o DDoS.
+Para publicar faltan HTTPS, configuración real de D1, WAF y límites en el borde,
+verificación de correo o revisión institucional operativa, monitoreo y respaldo
+con acceso restringido. El adaptador D1 actual carga un snapshot con un límite
+pequeño de filas y requiere revisión de escalabilidad antes de uso masivo.
+
+Referencias consultadas: [OWASP: validación y verificación de correo](https://cheatsheetseries.owasp.org/cheatsheets/Email_Validation_and_Verification_Cheat_Sheet.html),
+[almacenamiento de contraseñas](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+y [seguridad de Flask](https://flask.palletsprojects.com/en/stable/web-security/).

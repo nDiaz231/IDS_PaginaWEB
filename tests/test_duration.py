@@ -81,7 +81,7 @@ class DurationTests(unittest.TestCase):
         conn.close()
         backup = db.upgrade()
         self.assertTrue(backup.exists())
-        self.assertEqual(data.metadata('schema_version'), '4')
+        self.assertEqual(data.metadata('schema_version'), '5')
         self.assertIsNone(data.request(1)['requested_days'])
         self.assertEqual(data.request(1)['title'], 'Old book')
         self.assertIsNone(db.upgrade())

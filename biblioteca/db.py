@@ -73,7 +73,7 @@ def initialize():
 
 def migration_sql():
     folder = Path(__file__).parent / 'migrations'
-    return (folder / '002_favorites_security.sql').read_text(encoding='utf-8') + '\n' + (folder / '003_requested_days.sql').read_text(encoding='utf-8') + '\n' + (folder / '004_utilities.sql').read_text(encoding='utf-8')
+    return (folder / '002_favorites_security.sql').read_text(encoding='utf-8') + '\n' + (folder / '003_requested_days.sql').read_text(encoding='utf-8') + '\n' + (folder / '004_utilities.sql').read_text(encoding='utf-8') + '\n' + (folder / '005_registration.sql').read_text(encoding='utf-8')
 
 
 def backup(destination):
@@ -94,11 +94,11 @@ def upgrade():
     from . import data
     from datetime import datetime, timezone
     version = data.metadata('schema_version')
-    if version == '4':
+    if version == '5':
         return None
-    if version not in ('1', '2', '3'):
+    if version not in ('1', '2', '3', '4'):
         raise RuntimeError('Versión de base no reconocida. No se modificó.')
-    filename = 'antes-v4-' + datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f') + '.sqlite3'
+    filename = 'antes-v5-' + datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f') + '.sqlite3'
     saved = backup(Path(current_app.config['DATABASE']).parent / 'backups' / filename)
     conn = get_db()
     try:
@@ -106,7 +106,9 @@ def upgrade():
             conn.executescript((Path(__file__).parent / 'migrations/002_favorites_security.sql').read_text(encoding='utf-8'))
         if version in ('1', '2'):
             conn.executescript('BEGIN IMMEDIATE;\n' + (Path(__file__).parent / 'migrations/003_requested_days.sql').read_text(encoding='utf-8') + '\nCOMMIT;')
-        conn.executescript('BEGIN IMMEDIATE;\n' + (Path(__file__).parent / 'migrations/004_utilities.sql').read_text(encoding='utf-8') + '\nCOMMIT;')
+        if version in ('1', '2', '3'):
+            conn.executescript('BEGIN IMMEDIATE;\n' + (Path(__file__).parent / 'migrations/004_utilities.sql').read_text(encoding='utf-8') + '\nCOMMIT;')
+        conn.executescript('BEGIN IMMEDIATE;\n' + (Path(__file__).parent / 'migrations/005_registration.sql').read_text(encoding='utf-8') + '\nCOMMIT;')
     except BaseException:
         conn.rollback()
         raise

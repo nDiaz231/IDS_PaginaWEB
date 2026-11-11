@@ -38,7 +38,7 @@
   <section class="panel login-card">
 <p class="eyebrow">ACCESO A TU CUENTA</p>
 <h2>Iniciar sesión</h2>
-<p class="muted">Ingresa con la cuenta que te entregó el equipo del proyecto.</p>
+<p class="muted">Ingresa con tu correo registrado y tu contraseña de BiblioUCN.</p>
     {% if error %}<div class="notice danger" role="alert" tabindex="-1" data-error>{{ error }}</div>{% endif %}
     <form method="post" class="stack">{{ csrf() }}
       <div>
@@ -52,6 +52,8 @@
       <button class="button" type="submit">Ingresar a mi biblioteca <span aria-hidden="true">→</span>
 </button>
     </form>
+<p>¿Aún no tienes cuenta?</p>
+<a class="button secondary" href="{{ url_for('registration.register') }}">Crear cuenta</a>
 <p class="small muted login-note">Prototipo académico independiente. No uses tu contraseña institucional. Si olvidaste tu clave, solicita al responsable del proyecto que la restablezca.</p>
   </section>
 </div>

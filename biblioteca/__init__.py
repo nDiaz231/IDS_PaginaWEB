@@ -27,7 +27,7 @@ def create_app(test_config=None):
         SESSION_COOKIE_SECURE=os.getenv('COOKIE_SECURE', '0') == '1',
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         SESSION_REFRESH_EACH_REQUEST=False, MAX_CONTENT_LENGTH=64 * 1024,
-        WTF_CSRF_TIME_LIMIT=7200,
+        WTF_CSRF_TIME_LIMIT=7200, MAX_FORM_MEMORY_SIZE=16 * 1024, MAX_FORM_PARTS=20,
         TRUSTED_HOSTS=[h.strip() for h in os.getenv('TRUSTED_HOSTS','').split(',') if h.strip()] or None,
     )
     if test_config:
@@ -53,12 +53,14 @@ def create_app(test_config=None):
     from .views import bp as views_bp
     from .favorites import bp as favorites_bp
     from .cloud_accounts import bp as cloud_accounts_bp
+    from .registration import bp as registration_bp
+    app.register_blueprint(registration_bp)
     app.register_blueprint(cloud_accounts_bp)
     app.before_request(load_user)
     @app.before_request
     def refresh_pickups():
         from flask import request
-        if request.endpoint and request.endpoint != 'static':
+        if request.endpoint and request.endpoint not in ('static', 'auth.login', 'registration.register', 'registration.received'):
             from .circulation import expire_pickups
             expire_pickups()
     for blueprint in (auth_bp, catalog_bp, views_bp, favorites_bp):
@@ -77,7 +79,7 @@ def create_app(test_config=None):
 
     @app.get('/healthz')
     def health():
-        ready = data.metadata('schema_version')=='4'
+        ready = data.metadata('schema_version')=='5'
         return {'status':'ok' if ready else 'unavailable'}, (200 if ready else 503)
 
     @app.after_request

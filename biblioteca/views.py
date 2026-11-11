@@ -118,6 +118,8 @@ def eligibility(user_id):
         user=data.user(user_id)
         if not user or user['role']!='alumno':
             abort(404)
+        if data.registration_pending(user_id):
+            raise DomainError('Revisa y valida el registro antes de activar esta cuenta.',400)
         active=request.form.get('account_active')=='yes'
         enabled=request.form.get('lending_enabled')=='yes'
         reason=request.form.get('reason','').strip()

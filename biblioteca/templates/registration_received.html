@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block title %}Registro recibido{% endblock %}
+{% block content %}<section class="panel narrow">
+<p class="eyebrow">CREACIÓN DE CUENTA</p><h1>Solicitud de registro recibida</h1>
+<p>Si el correo y el RUT no estaban registrados, tu cuenta quedó pendiente de validación por administración.</p>
+<p>Podrás iniciar sesión cuando administración confirme tu identidad y la titularidad de tu correo institucional. Puedes consultar el estado con el equipo de biblioteca.</p>
+<p class="small muted">Si ya tenías una cuenta, conserva tu contraseña actual. Este formulario no la reemplaza.</p>
+<a class="button" href="{{ url_for('auth.login') }}">Volver a iniciar sesión</a>
+</section>{% endblock %}

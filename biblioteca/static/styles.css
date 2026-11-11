@@ -1262,6 +1262,9 @@ td a {
   flex-shrink:0
 }
 .favorite-star.is-favorite { fill:#dca520; stroke:#a66b00 }
+.registration-review { max-width:760px; margin:24px auto }
+.registration-review dt { font-weight:700; margin-top:16px }
+.registration-review dd { margin:4px 0; overflow-wrap:anywhere }
 .favorite-status:not(:empty) {
   position:fixed;
   bottom:20px;

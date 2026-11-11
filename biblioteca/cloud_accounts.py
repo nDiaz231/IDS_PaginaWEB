@@ -7,6 +7,7 @@ from .auth import role_required
 from .db import transaction
 from .errors import DomainError
 from .security import valid_password
+from .registration import institutional_email
 
 bp = Blueprint('cloud_accounts', __name__)
 
@@ -49,6 +50,7 @@ def setup():
 def create():
     if request.method == 'POST':
         email, name, password_hash = account_fields()
+        email = institutional_email(email)
         with transaction():
             ident = data.add_user(email, name, password_hash)
             data.audit(g.user['id'], 'alumno_creado', ident)
@@ -68,9 +70,30 @@ def reset_password(user_id):
         student = data.user(user_id)
         if not student or student['role'] != 'alumno':
             abort(404)
+        if data.registration_pending(user_id):
+            raise DomainError('Valida el registro antes de restablecer su contraseña.',400)
         data.change_password(user_id, password_hash)
         # Una cuenta de ejemplo solo se habilita después de cambiar su clave pública.
         data.write('UPDATE users SET is_demo=0,account_active=1 WHERE id=?', (user_id,))
         data.audit(g.user['id'], 'clave_alumno_restablecida', user_id)
     flash('Contraseña cambiada y cuenta activa. Se cerraron sus sesiones anteriores.', 'success')
     return redirect(url_for('views.students'))
+
+
+@bp.route('/admin/cuentas/<int:user_id>/registro', methods=['GET', 'POST'])
+@role_required('admin')
+def review(user_id):
+    student = data.user(user_id)
+    profile = data.student_profile(user_id)
+    if not student or student['role'] != 'alumno' or not profile:
+        abort(404)
+    if request.method == 'POST':
+        if request.form.get('verified') != 'yes':
+            raise DomainError('Confirma que verificaste la identidad y la titularidad del correo institucional.',400)
+        with transaction():
+            if not data.approve_registration(user_id,g.user['id']):
+                raise DomainError('Este registro ya fue validado.',409)
+            data.audit(g.user['id'],'registro_alumno_validado',user_id)
+        flash('Registro validado. El alumno ya puede iniciar sesión.','success')
+        return redirect(url_for('views.students'))
+    return render_template('registration_review.html',student=student,profile=profile)

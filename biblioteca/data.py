@@ -31,7 +31,32 @@ def user_by_email(email):
 
 
 def students():
-    return many("SELECT u.*, (SELECT count(*) FROM loans l WHERE l.user_id=u.id AND l.status='activo') AS active_loans FROM users u WHERE role='alumno' ORDER BY name")
+    return many("SELECT u.*, p.user_id IS NOT NULL AND p.reviewed_at IS NULL AS registration_pending, (SELECT count(*) FROM loans l WHERE l.user_id=u.id AND l.status='activo') AS active_loans FROM users u LEFT JOIN student_profiles p ON p.user_id=u.id WHERE role='alumno' ORDER BY registration_pending DESC,name")
+
+
+def student_profile(user_id):
+    return one('SELECT * FROM student_profiles WHERE user_id=?', (user_id,))
+
+
+def profile_by_rut(rut):
+    return one('SELECT user_id FROM student_profiles WHERE rut=?', (rut,))
+
+
+def registration_pending(user_id):
+    return one('SELECT user_id FROM student_profiles WHERE user_id=? AND reviewed_at IS NULL', (user_id,)) is not None
+
+
+def add_student_profile(user_id, fields):
+    write('INSERT INTO student_profiles(user_id,rut,admission_year,career,created_at) VALUES(?,?,?,?,?)',
+          (user_id,fields['rut'],fields['admission_year'],fields['career'],stamp()))
+
+
+def approve_registration(user_id, actor_id):
+    changed = write('UPDATE student_profiles SET reviewed_at=?,reviewed_by=? WHERE user_id=? AND reviewed_at IS NULL',
+                    (stamp(),actor_id,user_id)).rowcount
+    if changed:
+        write("UPDATE users SET account_active=1,lending_enabled=1,block_reason='',session_version=session_version+1 WHERE id=? AND role='alumno'", (user_id,))
+    return changed
 
 
 def add_user(email, name, password_hash, role='alumno', user_type='pregrado', enabled=True, reason='', is_demo=False):

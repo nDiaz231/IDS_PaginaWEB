@@ -13,6 +13,7 @@ def load_user():
     ident = session.get('user_id')
     g.user = data.user(ident) if ident else None
     if g.user and (not g.user['account_active'] or session.get('session_version') != g.user['session_version']
+                   or data.registration_pending(g.user['id'])
                    or (current_app.config['APP_MODE']=='production' and g.user['is_demo'])):
         session.clear()
         g.user = None
@@ -52,7 +53,7 @@ def login():
             return render_template('login.html',error='Demasiados intentos. Espera 15 minutos antes de volver a intentar.'), 429, {'Retry-After':'900'}
         user = data.user_by_email(email)
         valid = len(password) <= 200 and check_password_hash(user['password_hash'] if user else DUMMY_HASH, password)
-        if not user or not valid or not user['account_active'] or (current_app.config['APP_MODE']=='production' and user['is_demo']):
+        if not user or not valid or not user['account_active'] or data.registration_pending(user['id']) or (current_app.config['APP_MODE']=='production' and user['is_demo']):
             error = 'Correo o contraseña incorrectos, o cuenta inactiva.'
         else:
             with transaction():

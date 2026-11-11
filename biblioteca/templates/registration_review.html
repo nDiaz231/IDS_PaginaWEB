@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block title %}Validar registro{% endblock %}
+{% block content %}<a class="back-link" href="{{ url_for('views.students') }}">← Volver a alumnos</a>
+<section class="panel registration-review"><p class="eyebrow">ADMINISTRACIÓN · DATOS PRIVADOS</p>
+<h1>Validar registro</h1>
+<dl><dt>Nombre completo</dt><dd>{{ student.name }}</dd>
+<dt>Correo institucional</dt><dd>{{ student.email }}</dd>
+<dt>RUT</dt><dd>{{ profile.rut }}</dd>
+<dt>Año de ingreso</dt><dd>{{ profile.admission_year }}</dd>
+<dt>Carrera</dt><dd>{{ profile.career }}</dd>
+<dt>Solicitud recibida</dt><dd>{{ profile.created_at|localdate }}</dd></dl>
+{% if not profile.reviewed_at %}
+<p>Antes de habilitar la cuenta, confirma la identidad y los datos académicos por un canal institucional. Verifica también la titularidad del correo; su dominio por sí solo no la acredita.</p>
+<form method="post" class="stack" data-confirm="¿Confirmas la validación de identidad y correo y deseas habilitar esta cuenta?">{{ csrf() }}
+<label class="checkbox"><input name="verified" type="checkbox" value="yes" required><span>Verifiqué la identidad, los datos académicos y la titularidad del correo institucional.</span></label>
+<button class="button">Validar y habilitar cuenta</button></form>
+{% else %}<p class="badge badge-disponible">Registro validado el {{ profile.reviewed_at|localdate }}</p>{% endif %}
+</section>{% endblock %}

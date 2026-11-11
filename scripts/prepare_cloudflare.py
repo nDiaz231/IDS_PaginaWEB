@@ -17,6 +17,7 @@ def prepare():
     schema = (source / 'schema.sql').read_text(encoding='utf-8') + '\n' + (source / 'migrations/002_favorites_security.sql').read_text(encoding='utf-8')
     schema += '\n' + (source / 'migrations/003_requested_days.sql').read_text(encoding='utf-8')
     schema += '\n' + (source / 'migrations/004_utilities.sql').read_text(encoding='utf-8')
+    schema += '\n' + (source / 'migrations/005_registration.sql').read_text(encoding='utf-8')
     templates = {str(p.relative_to(source / 'templates')): p.read_text(encoding='utf-8')
                  for p in sorted((source / 'templates').rglob('*.html'))}
     static = {p.name: (p.read_bytes(), mimetypes.guess_type(p.name)[0] or 'application/octet-stream')

@@ -10,7 +10,7 @@
 <div class="loan-grid">{% for student in students %}<article class="panel">
 <h2>{{ student.name }}</h2>
 <p class="muted">{{ student.email }}<br>{{ student.active_loans }} préstamos activos</p>
-<form method="post" action="{{ url_for('views.eligibility',user_id=student.id) }}" class="stack">{{ csrf() }}<label class="checkbox">
+{% if student.registration_pending %}<p class="badge badge-pendiente">Registro pendiente de validación</p><p><a class="button" href="{{ url_for('cloud_accounts.review',user_id=student.id) }}">Revisar registro</a></p>{% else %}<form method="post" action="{{ url_for('views.eligibility',user_id=student.id) }}" class="stack">{{ csrf() }}<label class="checkbox">
 <input type="checkbox" name="account_active" value="yes" {% if student.account_active %}checked{% endif %}>
 <span>Cuenta activa</span>
 </label>
@@ -29,4 +29,4 @@
 <label for="password-{{ student.id }}">Nueva contraseña (mínimo 12 caracteres)</label>
 <input id="password-{{ student.id }}" type="password" name="password" minlength="12" maxlength="200" required autocomplete="new-password">
 <p class="small muted">Activa la cuenta y cierra sus sesiones anteriores. Conserva su habilitación o bloqueo de préstamos.</p>
-<button class="button secondary">Cambiar contraseña y activar cuenta</button></form></details></article>{% else %}{{ empty('Aún no hay alumnos','Carga los datos de demostración con el comando documentado en el README.') }}{% endfor %}</div>{% endblock %}
+<button class="button secondary">Cambiar contraseña y activar cuenta</button></form></details>{% endif %}</article>{% else %}{{ empty('Aún no hay alumnos','Carga los datos de demostración con el comando documentado en el README.') }}{% endfor %}</div>{% endblock %}
